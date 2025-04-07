@@ -11,12 +11,22 @@ var zIndex = 100000;
 *   createOverlay: Create overlay div with size and position based on the
 *   boundingRect properties of its corresponding target element.
 */
-function createOverlay (tgt, rect, cname) {
+/**
+ * 
+ * @param {Element} tgt Target element
+ * @param {DOMRect} rect Target element bounding rectangle
+ * @param {string} cname CSS class
+ * @param {Document} doc Owning document
+ * @returns Overlay node
+ */
+function createOverlay (tgt, rect, cname, doc) {
+  doc = doc || document;
+
   let scrollOffsets = getScrollOffsets();
   const MINWIDTH  = 68;
   const MINHEIGHT = 27;
 
-  let node = document.createElement("div");
+  let node = doc.createElement("div");
   node.setAttribute("class", [cname, 'oaa-element-overlay'].join(' '));
   node.startLeft = (rect.left + scrollOffsets.x) + "px";
   node.startTop  = (rect.top  + scrollOffsets.y) + "px";
@@ -28,7 +38,7 @@ function createOverlay (tgt, rect, cname) {
   node.style.borderColor = tgt.color;
   node.style.zIndex = zIndex;
 
-  let label = document.createElement("div");
+  let label = doc.createElement("div");
   label.setAttribute("class", 'oaa-overlay-label');
   label.style.backgroundColor = tgt.color;
   label.innerHTML = tgt.label;

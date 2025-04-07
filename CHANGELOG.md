@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v0.2.3 &mdash; 2025-04-06
+
+* Expanded the bookmarklets' search to include iframe elements where possible.
+
 ## v0.2.2 &mdash; 2016-04-01
 
 * Added a ```String.prototype.includes``` method polyfill (from Mozilla MDN) to

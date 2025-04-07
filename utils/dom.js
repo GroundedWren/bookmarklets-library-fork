@@ -92,34 +92,59 @@ function hasParentWithName (element, tagNames) {
 *   Optionally, if getInfo is specified, add tooltip information;
 *   if dndFlag is set, add drag-and-drop functionality.
 */
+/**
+ * Use select a set of elements add an overlay to each with a unique CSS class name.
+ * @param {Object} params Selection options
+ * @param {Array} params.targetList An array of objects describing elements to select
+ * @param {string} params.cssClass Overlay css class
+ * @param {function | undefined} getInfo Generates target information
+ * @param {function | undefined} evalInfo Applies information to a target
+ * @param {boolean | undefined} dndFlag Add drag-and-drop functionality
+ * @returns The number of overlays created
+ */
 function addNodes (params) {
-  let targetList = params.targetList,
-      cssClass = params.cssClass,
-      getInfo = params.getInfo,
-      evalInfo = params.evalInfo,
-      dndFlag = params.dndFlag;
+  const {targetList, cssClass, getInfo, evalInfo, dndFlag} = params;
   let counter = 0;
-
-  targetList.forEach(function (target) {
-    // Collect elements based on selector defined for target
-    let elements = document.querySelectorAll(target.selector);
-
-    // Filter elements if target defines a filter function
-    if (typeof target.filter === 'function')
-      elements = Array.prototype.filter.call(elements, target.filter);
-
-    Array.prototype.forEach.call(elements, function (element) {
-      if (isVisible(element)) {
-        let info = getInfo(element, target);
-        if (evalInfo) evalInfo(info, target);
-        let boundingRect = element.getBoundingClientRect();
-        let overlayNode = createOverlay(target, boundingRect, cssClass);
-        if (dndFlag) addDragAndDrop(overlayNode);
-        let labelNode = overlayNode.firstChild;
-        labelNode.title = formatInfo(info);
-        document.body.appendChild(overlayNode);
-        counter += 1;
+  getAllDocuments().forEach(doc => {
+    if(!doc.querySelector(`[href="https://accessibility-bookmarklets.org/build/styles.css"]`)) {
+      const link=doc.createElement('link');
+      link.rel='stylesheet';
+      link.type='text/css';
+      link.href='https://accessibility-bookmarklets.org/build/styles.css';
+      if(doc.firstElementChild) {
+        doc.firstElementChild.prepend(link);
       }
+    }
+
+    targetList.forEach(function (target) {
+      let elements = [...doc.querySelectorAll(target.selector)];
+      elements = (typeof target.filter === 'function')
+        ? elements.filter(target.filter)
+        : elements;
+  
+      elements.forEach(element => {
+        if(!isVisible(element)) { return; }
+        
+        const info = getInfo(element, target);
+        if (evalInfo) {
+          evalInfo(info, target);
+        }
+  
+        const overlayNode = createOverlay(
+          target,
+          element.getBoundingClientRect(),
+          cssClass,
+          doc
+        );
+        if (dndFlag) {
+          addDragAndDrop(overlayNode);
+        }
+        const labelNode = overlayNode.firstChild;
+        labelNode.title = formatInfo(info);
+        doc.body.appendChild(overlayNode);
+  
+        counter += 1;
+      });
     });
   });
 
@@ -130,10 +155,31 @@ function addNodes (params) {
 *   removeNodes: Use the unique CSS class name supplied to addNodes
 *   to remove all instances of the overlay nodes.
 */
+/**
+ * Removes dives matching a class from the document and its iframes
+ * @param {string} cssClass Class of nodes to remove
+ */
 function removeNodes (cssClass) {
   let selector = "div." + cssClass;
-  let elements = document.querySelectorAll(selector);
-  Array.prototype.forEach.call(elements, function (element) {
-    document.body.removeChild(element);
+  getAllDocuments().forEach(doc => {
+    let elements = doc.querySelectorAll(selector);
+    Array.prototype.forEach.call(elements, function (element) {
+      doc.body.removeChild(element);
+    });
   });
+}
+
+/**
+ * Finds all documents on the page
+ * @returns An array of documents
+ */
+function getAllDocuments() {
+  return [document, ...[...document.querySelectorAll(`iframe`)].map(iframe => {
+    try {
+      return iframe.contentWindow.document;
+    }
+    catch (error) {
+      return null;
+    }
+  }).filter(doc => !!doc)];
 }
